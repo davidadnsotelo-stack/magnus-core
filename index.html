@@ -762,24 +762,27 @@ function autoResize(el) {
 // ════════════════════════════════════════════════════════
 async function callClaude(userMessage) {
   // Build MCP servers array based on what's connected in Claude.ai
-  const mcpServers = [];
-  ;
+  const mcpServers = [
+    { type: 'url', url: 'https://gmailmcp.googleapis.com/mcp/v1', name: 'gmail-mcp' },
+    { type: 'url', url: 'https://calendarmcp.googleapis.com/mcp/v1', name: 'calendar-mcp' },
+    { type: 'url', url: 'https://drivemcp.googleapis.com/mcp/v1', name: 'drive-mcp' }
+  ];
 
   const body = {
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 1000,
     system: buildSystemPrompt(),
     messages: conversation,
     mcp_servers: mcpServers
   };
 
-  const res = await fetch('http://localhost:3001/api/messages', {
+  const res = await fetch('/api/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY,
       'anthropic-version': '2023-06-01',
-      'anthropic-version': '2023-06-01'
+      'anthropic-beta': 'mcp-client-2025-04-04'
     },
     body: JSON.stringify(body)
   });

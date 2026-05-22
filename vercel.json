@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/messages.js": {
+      "memory": 128,
+      "maxDuration": 30
+    }
+  }
+}
