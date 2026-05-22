@@ -762,11 +762,7 @@ function autoResize(el) {
 // ════════════════════════════════════════════════════════
 async function callClaude(userMessage) {
   // Build MCP servers array based on what's connected in Claude.ai
-  const mcpServers = [
-    { type: 'url', url: 'https://gmailmcp.googleapis.com/mcp/v1', name: 'gmail-mcp' },
-    { type: 'url', url: 'https://calendarmcp.googleapis.com/mcp/v1', name: 'calendar-mcp' },
-    { type: 'url', url: 'https://drivemcp.googleapis.com/mcp/v1', name: 'drive-mcp' }
-  ];
+  const mcpServers = [];
 
   const body = {
     model: 'claude-sonnet-4-20250514',
