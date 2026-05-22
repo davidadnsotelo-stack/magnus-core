@@ -765,11 +765,10 @@ async function callClaude(userMessage) {
   const mcpServers = [];
 
   const body = {
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5',
     max_tokens: 1000,
     system: buildSystemPrompt(),
-    messages: conversation,
-    mcp_servers: mcpServers
+    messages: conversation
   };
 
   const res = await fetch('/api/messages', {
