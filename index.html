@@ -788,7 +788,7 @@ async function callClaude(userMessage) {
     mcp_servers: mcpServers
   };
 
-  const res = await fetch('http://localhost:3001/api/messages', {
+  const res = await fetch('/api/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
