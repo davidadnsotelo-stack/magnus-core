@@ -3,10 +3,10 @@ const https = require('https');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-// Query Supabase REST API
-function querySupabase(table, params = '') {
+function querySupabase(table) {
   return new Promise((resolve, reject) => {
-    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}${params}`);
+    const urlStr = `${SUPABASE_URL}/rest/v1/${table}?limit=20`;
+    const url = new URL(urlStr);
     const options = {
       hostname: url.hostname,
       path: url.pathname + url.search,
@@ -25,28 +25,22 @@ function querySupabase(table, params = '') {
         catch { resolve([]); }
       });
     });
-    req.on('error', reject);
+    req.on('error', () => resolve([]));
     req.end();
   });
 }
 
-// Detect if message needs Supabase data
-function detectSupabaseIntent(message) {
+function detectTable(message) {
   const msg = message.toLowerCase();
-  const intents = {
-    estudiantes: ['estudiante', 'estudiantes', 'alumno', 'alumnos', 'matriculado', 'matriculados'],
-    docentes: ['docente', 'docentes', 'profesor', 'profesores'],
-    cohortes: ['cohorte', 'cohortes', 'grupo', 'periodo'],
-    asignaturas: ['asignatura', 'asignaturas', 'materia', 'materias', 'curso'],
-    asistencia: ['asistencia', 'asistió', 'faltó', 'presente'],
-  };
-  for (const [table, keywords] of Object.entries(intents)) {
-    if (keywords.some(k => msg.includes(k))) return table;
-  }
+  if (msg.includes('estudiante') || msg.includes('alumno')) return 'estudiantes';
+  if (msg.includes('docente') || msg.includes('profesor')) return 'docentes';
+  if (msg.includes('cohorte') || msg.includes('periodo')) return 'cohortes';
+  if (msg.includes('asignatura') || msg.includes('materia')) return 'asignaturas';
+  if (msg.includes('asistencia')) return 'asistencia';
   return null;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, anthropic-version');
@@ -57,24 +51,17 @@ export default async function handler(req, res) {
   const apiKey = req.headers['x-api-key'];
   let body = req.body;
 
-  // Detect Supabase intent from last user message
   const messages = body.messages || [];
-  const lastUserMsg = messages.filter(m => m.role === 'user').slice(-1)[0];
-  
-  if (lastUserMsg && SUPABASE_URL && SUPABASE_ANON_KEY) {
-    const table = detectSupabaseIntent(lastUserMsg.content);
+  const lastMsg = messages.filter(m => m.role === 'user').slice(-1)[0];
+
+  if (lastMsg && SUPABASE_URL && SUPABASE_ANON_KEY) {
+    const table = detectTable(lastMsg.content);
     if (table) {
-      try {
-        const data = await querySupabase(table, '?limit=20');
-        const dataStr = JSON.stringify(data, null, 2);
-        // Inject data into system prompt
-        body = {
-          ...body,
-          system: body.system + `\n\nDATA DE SUPABASE (tabla: ${table}):\n${dataStr}\n\nUsa estos datos reales para responder la pregunta del usuario.`
-        };
-      } catch (e) {
-        console.error('Supabase error:', e.message);
-      }
+      const data = await querySupabase(table);
+      body = {
+        ...body,
+        system: body.system + `\n\nDATA REAL DE SUPABASE (tabla: ${table}):\n${JSON.stringify(data, null, 2)}\n\nUsa estos datos para responder.`
+      };
     }
   }
 
@@ -107,4 +94,4 @@ export default async function handler(req, res) {
     proxyReq.write(bodyStr);
     proxyReq.end();
   });
-}
+};
