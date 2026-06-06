@@ -842,12 +842,20 @@ Holding empresarial en Tunja, Boyacá. Sistema 8 fases: Input→Análisis→Estr
 Contacto: magnusholdingtunja@gmail.com · WhatsApp: 310 316 6330
 Aliados activos: GeoProject (topografía), ECA Creciendo Juntos (socioambiental), Alena (cacao artesanal), Sky Visual (fotografía/contenido), Eco Granja Santa Inés (insumos orgánicos), Sea Team (natación).
 
+CAPACIDADES NATIVAS DE ESTE SISTEMA (NO son integraciones externas, están embebidas en la misma app):
+- WAKE WORD: Siempre escucho "Magnus..." para activarme por voz. No necesito que el usuario abra nada.
+- VOZ DE SALIDA: Si está activado "Voz Out", respondo en audio automáticamente después de cada respuesta.
+- GESTURE HUD: Panel lateral con cámara en tiempo real. Detecta manos y rostro. Comandos: OK mano derecha=resumen del día, OK mano izquierda=correos, OK ambas manos=estado Magnus, pulgar arriba=confirmar tarea, mano abierta=activar voz. También detecta emoción, mirada, inclinación y expresión facial.
+- MIC MANUAL: Botón 🎤 para activar escucha sin wake word.
+- Cuando ${USER_NAME} pregunta si tienes o ves algo (HUD, gestos, cámara), confirma que SÍ está integrado nativamente. NUNCA digas que no tienes acceso a estas funciones.
+
 REGLAS:
 1. Máximo 100 palabras por respuesta. Directo y de alto valor.
 2. Sin listas largas ni headers en chat de voz. Habla como socio.
 3. Si algo es urgente para Magnus Holding, márcalo.
 4. Proactivo: si ves algo importante, dilo sin que te lo pidan.
-5. NUNCA genérico. Siempre Magnus hablando con ${USER_NAME}.`;
+5. NUNCA genérico. Siempre Magnus hablando con ${USER_NAME}.
+6. NUNCA digas que no tienes acceso al HUD, cámara, voz o gestos. Son parte de ti.`;
 }
 
 async function sendToAPI() {
@@ -1030,10 +1038,28 @@ function toggleHUD() {
   }
 }
 
-function initGesture() {
+async function initGesture() {
   const videoEl  = document.getElementById('gesture-video');
   const canvasEl = document.getElementById('gesture-canvas');
   const ctx      = canvasEl.getContext('2d');
+
+  // Pedir permiso de camara explicitamente
+  addSystemMsg('\u25c8 Solicitando permiso de camara y microfono...');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:290, height:218, facingMode:'user' },
+      audio: false
+    });
+    stream.getTracks().forEach(t => t.stop());
+    addSystemMsg('\u2713 Permiso de camara concedido — iniciando HUD');
+  } catch(err) {
+    addSystemMsg('\u2717 Sin acceso a camara: ' + err.message + ' — Haz clic en el candado de la URL y permite la camara, luego reactiva el HUD');
+    hudActive = false;
+    document.getElementById('gesture-panel').classList.remove('open');
+    document.getElementById('hud-btn').classList.remove('active');
+    document.getElementById('pill-hud').classList.remove('connected');
+    return;
+  }
 
   // Face Mesh
   gestureFaceMesh = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
@@ -1050,7 +1076,6 @@ function initGesture() {
       await gestureHands.send({ image: videoEl });
       if (faceFrame % 3 === 0) await gestureFaceMesh.send({ image: videoEl });
       faceFrame++;
-      // FPS counter
       fpsCounter++;
       const now = Date.now();
       if (now - fpsTimer >= 1000) {
@@ -1060,7 +1085,17 @@ function initGesture() {
     },
     width: 290, height: 218
   });
-  gestureCamera.start();
+
+  try {
+    await gestureCamera.start();
+    addSystemMsg('\u25c8 HUD en vivo — camara activa');
+  } catch(err) {
+    addSystemMsg('\u2717 Error al iniciar camara: ' + err.message);
+    hudActive = false;
+    document.getElementById('gesture-panel').classList.remove('open');
+    document.getElementById('hud-btn').classList.remove('active');
+    document.getElementById('pill-hud').classList.remove('connected');
+  }
 }
 
 function stopGesture() {
