@@ -433,12 +433,12 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
         <div class="gp-feed">
           <div class="gp-feed-label">
             <span class="feed-dot"></span>
-            LIVE / CAM-01 / 290×218
+            LIVE / CAM-01 / 240×180
           </div>
           <div class="canvas-wrap">
             <span class="cbr"></span><span class="cbl"></span>
             <video id="gesture-video" style="display:none;" playsinline></video>
-            <canvas id="gesture-canvas" width="290" height="218"></canvas>
+            <canvas id="gesture-canvas" width="240" height="180"></canvas>
           </div>
         </div>
 
@@ -1047,7 +1047,7 @@ async function initGesture() {
   addSystemMsg('\u25c8 Solicitando permiso de camara y microfono...');
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width:290, height:218, facingMode:'user' },
+      video: { width:240, height:180, facingMode:'user' },
       audio: false
     });
     stream.getTracks().forEach(t => t.stop());
@@ -1063,18 +1063,18 @@ async function initGesture() {
 
   // Face Mesh
   gestureFaceMesh = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
-  gestureFaceMesh.setOptions({ maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+  gestureFaceMesh.setOptions({ maxNumFaces:1, refineLandmarks:false, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
   gestureFaceMesh.onResults(onFaceResults);
 
   // Hands
   gestureHands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-  gestureHands.setOptions({ maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.6, minTrackingConfidence:0.5 });
+  gestureHands.setOptions({ maxNumHands:2, modelComplexity:0, minDetectionConfidence:0.5, minTrackingConfidence:0.4 });
   gestureHands.onResults((results) => onHandResults(results, ctx, canvasEl));
 
   gestureCamera = new Camera(videoEl, {
     onFrame: async () => {
       await gestureHands.send({ image: videoEl });
-      if (faceFrame % 3 === 0) await gestureFaceMesh.send({ image: videoEl });
+      if (faceFrame % 5 === 0) await gestureFaceMesh.send({ image: videoEl });
       faceFrame++;
       fpsCounter++;
       const now = Date.now();
@@ -1083,7 +1083,7 @@ async function initGesture() {
         fpsCounter = 0; fpsTimer = now;
       }
     },
-    width: 290, height: 218
+    width: 240, height: 180
   });
 
   try {
